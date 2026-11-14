@@ -71,7 +71,7 @@ internal sealed class MainWindow : Form
         var page = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(24), ColumnCount = 1, RowCount = 3, BackColor = Theme.Background };
         page.RowStyles.Add(new RowStyle(SizeType.Absolute, 70)); page.RowStyles.Add(new RowStyle(SizeType.Percent, 100)); page.RowStyles.Add(new RowStyle(SizeType.Absolute, 34));
         var header = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 2, Margin = Padding.Empty };
-        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 530));
+        header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100)); header.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 625));
         var brand = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false };
         brand.Controls.Add(Theme.Label("Keypad Layers", 26));
         var headerActions = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.RightToLeft };
@@ -80,7 +80,9 @@ internal sealed class MainWindow : Form
         var options = Theme.Button("Settings"); options.Width = 105;
         options.Click += (_, _) => { using var dialog = new PreferencesDialog(settings, startupRegistration, SaveSettings); dialog.ShowDialog(this); ApplyTheme(); };
         themeToggle.Width = 115; themeToggle.Click += (_, _) => ToggleTheme();
-        pause.Width = 90; headerActions.Controls.Add(setup); headerActions.Controls.Add(options); headerActions.Controls.Add(themeToggle); headerActions.Controls.Add(pause);
+        var lighting = Theme.Button("Lighting"); lighting.Width = 90;
+        lighting.Click += (_, _) => { using var dialog = new LightingDialog(settings, SaveSettings); dialog.ShowDialog(this); };
+        pause.Width = 90; headerActions.Controls.Add(setup); headerActions.Controls.Add(lighting); headerActions.Controls.Add(options); headerActions.Controls.Add(themeToggle); headerActions.Controls.Add(pause);
         header.Controls.Add(brand, 0, 0); header.Controls.Add(headerActions, 1, 0);
         page.Controls.Add(header, 0, 0);
         var columns = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 3, Margin = Padding.Empty };
@@ -395,6 +397,7 @@ internal sealed class MainWindow : Form
             // Device setup is local to this PC, not a property of the imported profile.
             imported.DeviceConfigured = settings.DeviceConfigured;
             imported.StartWithWindows = settings.StartWithWindows; imported.StartMinimized = settings.StartMinimized; imported.Theme = settings.Theme;
+            imported.LastLedMode = settings.LastLedMode;
             store.Save(imported);
             settings.Layers = imported.Layers; settings.StartupLayerId = imported.StartupLayerId; settings.ShowOverlay = imported.ShowOverlay;
             Engine.Activate(settings.StartupLayerId); editingId = settings.StartupLayerId;

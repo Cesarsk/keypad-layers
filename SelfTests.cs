@@ -17,6 +17,19 @@ internal static class SelfTests
         public bool IsEnabled { get; private set; }
         public void SetEnabled(bool enabled) => IsEnabled = enabled;
     }
+    private sealed class FakeLighting : ILightingDevice
+    {
+        public bool Connected { get; set; } = true;
+        public bool Fail { get; set; }
+        public TaskCompletionSource? Pending { get; set; }
+        public List<int> Applied { get; } = [];
+        public IReadOnlyList<DeviceInfo> Find() => Connected ? [new("test-device", "3 keys + 1 knob · 1189:8890", 65)] : [];
+        public Task ApplyAsync(DeviceInfo device, int mode)
+        {
+            Applied.Add(mode);
+            return Fail ? Task.FromException(new IOException("Device disconnected")) : Pending?.Task ?? Task.CompletedTask;
+        }
+    }
     public static int Run(string directory)
     {
         Directory.CreateDirectory(directory);
@@ -75,6 +88,45 @@ internal static class SelfTests
             Check(new byte[] { reports[2][1], reports[6][1], reports[10][1], reports[14][1], reports[18][1], reports[22][1] }.SequenceEqual(new byte[] { 1, 2, 3, 13, 14, 15 }), "Key and encoder positions use the 8890 control IDs");
             Check(Enumerable.Range(0, 6).All(i => reports[i * 4 + 2][6] == 0x68 + i && reports[i * 4 + 2][2] == 0x11), "Only hardware layer 1 is mapped to F13-F18");
             Reject(() => KeypadDevice.TriggerReports(8).ToArray(), "Refuse an incompatible HID report size");
+            var lightingReports = KeypadDevice.LightingReports(65, 2).ToArray();
+            Check(lightingReports.Length == 3 && lightingReports.All(r => r.Length == 65) && lightingReports[0].Take(3).SequenceEqual(new byte[] { 3, 0xA1, 1 }) && lightingReports[1].Take(4).SequenceEqual(new byte[] { 3, 0xB0, 0x18, 2 }) && lightingReports[2].Take(3).SequenceEqual(new byte[] { 3, 0xAA, 0xA1 }), "LED reports match the vendor's 8890 lighting transaction");
+            Check(lightingReports.All(r => r[1] is 0xA1 or 0xB0 or 0xAA) && lightingReports[2][2] != 0xAA, "Lighting reports never use a key-binding command or commit");
+            Check(KeypadDevice.LightingReports(65, 0).ElementAt(1)[3] == 0 && KeypadDevice.LightingReports(65, 1).ElementAt(1)[3] == 1, "Off and Mode 1 use their distinct firmware mode values");
+            Reject(() => KeypadDevice.LightingReports(65, 3).ToArray(), "Reject LED modes absent from the vendor app");
+            Reject(() => KeypadDevice.LightingReports(8, 1).ToArray(), "Reject an incompatible LED output report size");
+            var lightingSettings = Settings.Defaults();
+            Check(lightingSettings.LastLedMode is null, "Existing profiles do not invent an applied LED mode");
+            lightingSettings.LastLedMode = 3; Reject(lightingSettings.Validate, "Reject invalid saved LED preferences"); lightingSettings.LastLedMode = null;
+            var lightingStore = new SettingsStore(Path.Combine(directory, "lighting.json")); var fakeLighting = new FakeLighting();
+            using (var lighting = new LightingDialog(lightingSettings, () => { lightingStore.Save(lightingSettings); return true; }, fakeLighting))
+            {
+                lighting.Show(); Application.DoEvents();
+                Check(fakeLighting.Applied.Count == 0 && lighting.CanApply, "Opening Lighting scans the device without changing its LEDs");
+                lighting.SelectMode(2); lighting.ClickApply(); Application.DoEvents();
+                Check(fakeLighting.Applied.SequenceEqual(new[] { 2 }) && lightingStore.Load().Settings.LastLedMode == 2, "Apply button sends the selected LED mode and persists it");
+                lighting.ClickOff(); Application.DoEvents();
+                Check(fakeLighting.Applied.SequenceEqual(new[] { 2, 0 }) && lightingSettings.LastLedMode == 0, "Turn off button sends mode zero");
+                fakeLighting.Pending = new TaskCompletionSource(); lighting.SelectMode(1); lighting.ClickApply();
+                Check(lighting.IsBusy && !lighting.CanApply && lightingSettings.LastLedMode == 0, "LED writes disable repeated applies and wait before changing saved state");
+                fakeLighting.Pending.SetResult();
+                var timeout = Stopwatch.StartNew(); while (lighting.IsBusy && timeout.ElapsedMilliseconds < 3000) { Application.DoEvents(); Thread.Sleep(1); }
+                Check(!lighting.IsBusy && lighting.CanApply && lightingSettings.LastLedMode == 1, "LED controls recover after an asynchronous write completes");
+                fakeLighting.Pending = null; fakeLighting.Fail = true; lighting.SelectMode(2); lighting.ClickApply(); Application.DoEvents();
+                Check(!lighting.IsBusy && lightingSettings.LastLedMode == 1 && lighting.ResultText.Contains("failed", StringComparison.OrdinalIgnoreCase), "A failed LED write retains the last applied mode and reports the failure");
+                fakeLighting.Fail = false; lighting.SelectMode(1); lighting.ClickApply(); Application.DoEvents();
+                Check(lightingSettings.LastLedMode == 1 && lighting.ResultText.Contains("sent to the keypad"), "A successful retry clears the LED failure state");
+                foreach (var mode in Enum.GetValues<ThemeMode>())
+                {
+                    Theme.Set(mode); Theme.Apply(lighting); Application.DoEvents();
+                    using var image = new Bitmap(lighting.Width, lighting.Height); lighting.DrawToBitmap(image, new Rectangle(Point.Empty, image.Size));
+                    image.Save(Path.Combine(directory, "lighting-" + mode.ToString().ToLowerInvariant() + ".png"));
+                }
+                lighting.Close(); Theme.Set(ThemeMode.Dark);
+            }
+            using (var disconnected = new LightingDialog(lightingSettings, () => true, new FakeLighting { Connected = false }))
+            {
+                disconnected.Show(); Application.DoEvents(); Check(!disconnected.CanApply, "Lighting cannot apply when no supported keypad is connected"); disconnected.Close();
+            }
             const string displayCommand = """C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile -WindowStyle Hidden -Command "$d=Add-Type -MemberDefinition ('[DllImport('+[char]34+'user32.dll'+[char]34+')] public static extern System.IntPtr SendMessage(System.IntPtr hWnd, uint msg, System.UIntPtr wParam, System.IntPtr lParam);') -Name DisplayPower -PassThru; Start-Sleep -Seconds 1; [void]$d::SendMessage([IntPtr]0xFFFF,0x0112,[UIntPtr]::new([uint32]0xF170),[IntPtr]2)""" + "\"";
             var parsed = CommandLine.Parse(displayCommand);
             Check(parsed.Executable + " " + parsed.Arguments == displayCommand, "PowerShell display-off example keeps its exact arguments without executing it");

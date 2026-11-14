@@ -23,6 +23,7 @@ In Windows **Device Manager**, open the keypad's device properties, select **Det
 - Assign next-layer, previous-layer, or direct layer switching to any control.
 - Light and dark themes inspired by [lucacesarano.com](https://lucacesarano.com).
 - Tray controls, optional Windows startup, and optional minimized launch.
+- LED mode selection: Off, Mode 1, or Mode 2, matching the vendor app.
 - Import/export JSON profiles and recover settings from a local backup.
 
 | Dark | Light |
@@ -58,6 +59,14 @@ Open **Settings** for **Start with Windows** and **Start minimized to tray**. St
 
 Use the theme button or Settings to choose light or dark. Preferences persist between launches. Importing a profile preserves local startup and theme preferences.
 
+### Device lighting
+
+Open **Lighting**, choose your USB keypad, select **Off**, **Mode 1**, or **Mode 2**, and click **Apply**. **Turn off** switches directly to mode zero. The last successfully sent mode is remembered locally; opening the panel or importing a profile does not change the LEDs.
+
+These are the three modes exposed by the vendor software for this model. The visible effects depend on the firmware, so the app keeps the original numbered names. The supported protocol has no separate RGB color or brightness controls. Lighting uses its own USB transaction and does not reprogram the keys or knob.
+
+<img src="docs/lighting-dark.png" width="490" alt="LED mode controls for the 3-key CH57x macropad: Off, Mode 1 and Mode 2">
+
 ## Compatibility
 
 This release targets the confirmed three-key/one-knob layout. USB IDs are shared by other products, so setup also checks interface 1 and the HID output-report descriptor and asks you to confirm the layout.
@@ -73,7 +82,7 @@ This release targets the confirmed three-key/one-knob layout. USB IDs are shared
 
 You can make these assignments yourself in the vendor tool instead of using the setup screen. F13–F18 are reserved globally while the app listens, including those keys on another keyboard.
 
-Layer switching does not write device flash. One-time setup changes only hardware layer 1; other hardware layers and lighting are left alone. No firmware replacement or custom USB driver is installed.
+Layer switching does not write device flash. Keypad setup changes only the six assignments in hardware layer 1; lighting is configured separately in its own panel. No firmware replacement or custom USB driver is installed.
 
 Generated input is subject to Windows permissions: controlling an administrator app may require running Keypad Layers at the same permission level. Shortcuts use the active Windows keyboard layout.
 
@@ -107,7 +116,7 @@ Requires Windows and the .NET 10 SDK. The application has no third-party runtime
 ./scripts/Publish.ps1
 ```
 
-This builds a single portable EXE under `out/win-x64`, runs the automated checks, renders both themes, and writes build metadata and SHA-256 checksums. Tests cover layer routing, real editor/settings controls, persistence and recovery, startup registration in an isolated test key, hidden startup, command argument handling, harmless command execution, and USB report generation. They do not program a connected keypad or run the display-off command.
+This builds a single portable EXE under `out/win-x64`, runs the automated checks, renders both themes, and writes build metadata and SHA-256 checksums. Tests cover layer routing, real editor/settings/lighting controls, persistence and recovery, startup registration in an isolated test key, hidden startup, command argument handling, harmless command execution, and USB report generation. Lighting tests use a simulated USB device to check successful, pending, disconnected, and failed writes. Tests do not program a connected keypad or run the display-off command.
 
 To run checks separately:
 

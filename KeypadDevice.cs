@@ -11,6 +11,7 @@ internal sealed record DeviceInfo(string Path, string Name, ushort ReportLength)
 
 internal static class KeypadDevice
 {
+    private static readonly object WriteGate = new();
     // CH57x 1189:8890 protocol. Only a 3-key/one-knob unit is supported here.
     // Reference: https://github.com/kriomant/ch57x-keyboard-tool/blob/master/src/keyboard/k8890.rs
     internal static IEnumerable<byte[]> TriggerReports(int reportLength)
@@ -32,6 +33,17 @@ internal static class KeypadDevice
             byte[] end = new byte[reportLength];
             new byte[] { 3, 0xAA, 0xAA }.CopyTo(end, 0);
             yield return end;
+        }
+    }
+
+    internal static IEnumerable<byte[]> LightingReports(int reportLength, int mode)
+    {
+        if (reportLength < 9 || reportLength > 1024) throw new InvalidDataException("Unsupported HID output report length.");
+        if (mode is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(mode), "Choose Off, Mode 1, or Mode 2.");
+        // Same three reports as the vendor's LED Download command for report ID 3.
+        foreach (var payload in new byte[][] { [3, 0xA1, 1], [3, 0xB0, 0x18, (byte)mode], [3, 0xAA, 0xA1] })
+        {
+            var report = new byte[reportLength]; payload.CopyTo(report, 0); yield return report;
         }
     }
 
@@ -79,17 +91,28 @@ internal static class KeypadDevice
         return found;
     }
 
-    public static void Configure(DeviceInfo selected)
+    public static void Configure(DeviceInfo selected) => WriteReports(selected, TriggerReports);
+
+    public static void SetLighting(DeviceInfo selected, int mode)
     {
-        // Recheck identity and descriptors immediately before opening for writes.
-        var actual = Find().SingleOrDefault(d => d.Path == selected.Path) ?? throw new IOException("The keypad disconnected. Reconnect it and scan again.");
-        using var handle = CreateFile(actual.Path, 0x40000000, 3, 0, 3, 0, 0);
-        if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot open the keypad. Close MINI KeyBoard and try again.");
-        foreach (var report in TriggerReports(actual.ReportLength))
+        if (mode is < 0 or > 2) throw new ArgumentOutOfRangeException(nameof(mode));
+        WriteReports(selected, length => LightingReports(length, mode));
+    }
+
+    private static void WriteReports(DeviceInfo selected, Func<int, IEnumerable<byte[]>> createReports)
+    {
+        lock (WriteGate)
         {
-            if (!WriteFile(handle, report, report.Length, out int written, 0) || written != report.Length)
-                throw new Win32Exception(Marshal.GetLastWin32Error(), "Setup stopped during a USB write. Some controls may have changed. Reconnect and run setup again.");
-            Thread.Sleep(30);
+            // Recheck identity and descriptors immediately before opening for writes.
+            var actual = Find().SingleOrDefault(d => d.Path == selected.Path) ?? throw new IOException("The keypad disconnected. Reconnect it and scan again.");
+            using var handle = CreateFile(actual.Path, 0x40000000, 3, 0, 3, 0, 0);
+            if (handle.IsInvalid) throw new Win32Exception(Marshal.GetLastWin32Error(), "Cannot open the keypad. Close MINI KeyBoard and try again.");
+            foreach (var report in createReports(actual.ReportLength))
+            {
+                if (!WriteFile(handle, report, report.Length, out int written, 0) || written != report.Length)
+                    throw new Win32Exception(Marshal.GetLastWin32Error(), "A USB write failed. Reconnect the keypad and retry the operation.");
+                Thread.Sleep(30);
+            }
         }
     }
 

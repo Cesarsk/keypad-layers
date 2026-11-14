@@ -35,6 +35,7 @@ internal sealed class Settings
     public ThemeMode Theme { get; set; } = ThemeMode.Dark;
     public bool StartWithWindows { get; set; }
     public bool StartMinimized { get; set; }
+    public int? LastLedMode { get; set; }
 
     public static Settings Defaults()
     {
@@ -60,6 +61,7 @@ internal sealed class Settings
     {
         if (SchemaVersion != 1) throw new InvalidDataException("This settings version is not supported.");
         if (!Enum.IsDefined(Theme)) throw new InvalidDataException("Unsupported theme.");
+        if (LastLedMode is < 0 or > 2) throw new InvalidDataException("Unsupported LED mode.");
         if (Layers is null || Layers.Count is < 1 or > 50 || Layers.Any(l => l is null)) throw new InvalidDataException("A profile must contain 1 to 50 layers.");
         if (Layers.Any(l => string.IsNullOrWhiteSpace(l.Id) || string.IsNullOrWhiteSpace(l.Name) || l.Name.Length > 60)) throw new InvalidDataException("Every layer needs a name (up to 60 characters) and an ID.");
         if (Layers.Select(l => l.Id).Distinct().Count() != Layers.Count) throw new InvalidDataException("Layer IDs must be unique.");
