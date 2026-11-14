@@ -1,0 +1,9 @@
+bin/
+obj/
+publish/
+verification/
+out/
+*.zip
+scripts/*.log
+scripts/last-artifact.txt
+scripts/*Development.ps1
