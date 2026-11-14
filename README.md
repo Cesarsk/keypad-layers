@@ -1,10 +1,20 @@
-# Keypad Layers
+# Keypad Layers — AliExpress 3-Key Macro Keyboard Software for Windows
 
 <img src="Assets/app.png" width="72" alt="Keypad Layers icon">
 
-A Windows app for customizing a **3-key, 1-knob CH57x keypad (USB 1189:8890)** with software layers.
+Free, open-source Windows software for the common **AliExpress 3-key, 1-knob USB macro keyboard**. Customize the three mechanical keys, rotary knob, and knob press with shortcuts, media controls, PowerShell commands, and software layers.
+
+Designed for the **CH57x keypad with USB ID `1189:8890`**, often sold as a *3 key 1 knob macropad*, *mini keyboard*, or *programmable USB macro keypad*. It works with the stock firmware and provides an alternative to the vendor's **MINI KeyBoard** software for this supported layout.
 
 [Download the latest release](https://github.com/Cesarsk/keypad-layers/releases/latest)
+
+## Is this your AliExpress macropad?
+
+<img src="docs/aliexpress-3-key-1-knob-macropad.png" width="235" height="267" alt="Common AliExpress 3-key mechanical macro keyboard with one rotary knob, USB-C port, and clear case">
+
+This is the common three-key, one-knob design the app targets. Sellers use different names and similar cases for different hardware, so check the USB ID as well as the appearance. The supported device is **`VID_1189` / `PID_8890`**, connected by USB.
+
+In Windows **Device Manager**, open the keypad's device properties, select **Details → Hardware Ids**, and look for `VID_1189&PID_8890`.
 
 ## Features
 
@@ -70,6 +80,24 @@ Generated input is subject to Windows permissions: controlling an administrator 
 ## Settings and profiles
 
 Settings live at `%LOCALAPPDATA%\KeypadLayers\settings.json`. The previous valid file is saved as `.bak`. Recovery preserves invalid files with a timestamp. Profiles contain user-created mappings, including any custom command text; review them before sharing.
+
+## Frequently asked questions
+
+### Can I add layers to a 3-key macropad without a layer or Fn button?
+
+Yes. Assign **Next layer**, **Previous layer**, or **Switch to layer** to a key or the knob press. These layers run in Windows, so Keypad Layers must stay open or in the tray.
+
+### Can the knob control volume in one layer and shortcuts in another?
+
+Yes. Each layer has separate assignments for clockwise rotation, counterclockwise rotation, and knob press, as well as the three keys.
+
+### Does it work with every AliExpress mini keyboard?
+
+This release supports the confirmed **three-key, one-knob CH57x `1189:8890`** layout. Other key counts, USB IDs, and lookalike boards need their own verification. The setup screen checks the device interface and output-report descriptor before offering to write settings.
+
+### Do I need QMK or VIA?
+
+No. This app uses the supported keypad's existing USB configuration protocol and keeps its stock firmware.
 
 ## Build and test
 
