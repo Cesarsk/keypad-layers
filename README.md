@@ -65,6 +65,8 @@ Open **Lighting**, choose your USB keypad, select **Off**, **Mode 1**, or **Mode
 
 These are the three modes exposed by the vendor software for this model. The visible effects depend on the firmware, so the app keeps the original numbered names. The supported protocol has no separate RGB color or brightness controls. Lighting uses its own USB transaction and does not reprogram the keys or knob.
 
+Further protocol research found hardware-tested descriptions for `1189:8890`: Mode 1 is reactive lighting on keypress, and Mode 2 cycles the built-in colors. Neither mode accepts a user-selected color; no brightness or speed control is exposed. See [LED protocol findings](docs/led-findings.md) for evidence and model-compatibility notes.
+
 <img src="docs/lighting-dark.png" width="490" alt="LED mode controls for the 3-key CH57x macropad: Off, Mode 1 and Mode 2">
 
 ## Compatibility
