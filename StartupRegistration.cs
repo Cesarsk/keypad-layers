@@ -28,7 +28,10 @@ internal sealed class KeypadApplicationContext : ApplicationContext
 {
     public KeypadApplicationContext(MainWindow window, bool minimized)
     {
-        MainForm = window;
+        if (minimized)
+            window.FormClosed += (_, _) => ExitThread();
+        else
+            MainForm = window;
         _ = window.Handle;
         window.BeginInvoke(window.StartRuntime);
         if (!minimized) window.OpenEditor();

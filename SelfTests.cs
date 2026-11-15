@@ -175,6 +175,15 @@ internal static class SelfTests
                 Check(hiddenWindow.Visible && hiddenWindow.WindowState == FormWindowState.Normal, "Opening from the tray restores the editor");
                 hiddenWindow.Close();
             }
+            bool shownDuringHiddenMessageLoop = false;
+            using (var loopWindow = new MainWindow(Settings.Defaults(), new SettingsStore(Path.Combine(directory, "hidden-loop.json")), new RecordingOutput(), true))
+            using (var context = new KeypadApplicationContext(loopWindow, true))
+            using (var timer = new System.Windows.Forms.Timer { Interval = 25 })
+            {
+                timer.Tick += (_, _) => { timer.Stop(); shownDuringHiddenMessageLoop = loopWindow.Visible; loopWindow.Close(); };
+                timer.Start(); Application.Run(context);
+            }
+            Check(!shownDuringHiddenMessageLoop, "Minimized startup stays hidden through the real message loop and exits when closed");
             using var window = new MainWindow(Settings.Defaults(), new SettingsStore(Path.Combine(directory, "ui-profile.json")), new RecordingOutput(), true);
             window.Show(); Application.DoEvents(); window.ExerciseUi(); Application.DoEvents();
             Check(true, "Editor buttons add, rename, activate, bind, duplicate, delete, pause, and persist actual UI state");

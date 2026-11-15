@@ -55,7 +55,7 @@ For a PowerShell script, use the full `powershell.exe` path followed by your swi
 
 ### Startup and theme
 
-Open **Settings** for **Start with Windows** and **Start minimized to tray**. Startup registers only this app under the current user's Windows Run key; it needs no administrator permission. Disabling the option removes that entry. Keep the EXE at its chosen path after enabling startup. If you move it, enable startup again from the new location.
+Open **Settings** for **Start with Windows** and **Start minimized to tray**. At Windows sign-in, minimized startup keeps the editor hidden and available from the tray. Startup registers only this app under the current user's Windows Run key; it needs no administrator permission. Disabling the option removes that entry. Keep the EXE at its chosen path after enabling startup. If you move it, enable startup again from the new location.
 
 Use the theme button or Settings to choose light or dark. Preferences persist between launches. Importing a profile preserves local startup and theme preferences.
 
