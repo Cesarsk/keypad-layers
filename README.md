@@ -8,6 +8,8 @@ Designed for the **CH57x keypad with USB ID `1189:8890`**, often sold as a *3 ke
 
 [Download the latest release](https://github.com/Cesarsk/keypad-layers/releases/latest)
 
+The release includes an installer for the current Windows user and a portable executable. Run the installer to add a Start menu shortcut; a desktop shortcut is optional. To install an update, run the newer setup from GitHub Releases. It reuses the previous install location and leaves settings in `%LOCALAPPDATA%\KeypadLayers`. Automatic update checks are not included yet.
+
 ## Is this your AliExpress macropad?
 
 <img src="docs/aliexpress-3-key-1-knob-macropad.png" width="235" height="267" alt="Common AliExpress 3-key mechanical macro keyboard with one rotary knob, USB-C port, and clear case">
