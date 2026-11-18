@@ -471,7 +471,7 @@ internal sealed class LayerOverlay : Form
     protected override CreateParams CreateParams { get { var cp = base.CreateParams; cp.ExStyle |= 0x08000080; return cp; } }
     public LayerOverlay()
     {
-        FormBorderStyle = FormBorderStyle.None; ShowInTaskbar = false; TopMost = true; BackColor = Theme.Card; Size = new Size(320, 90); Padding = new Padding(18);
+        FormBorderStyle = FormBorderStyle.None; StartPosition = FormStartPosition.Manual; ShowInTaskbar = false; TopMost = true; BackColor = Theme.Card; Size = new Size(320, 90); Padding = new Padding(18);
         text.Dock = DockStyle.Fill; text.ForeColor = Theme.Accent; text.AutoSize = false; text.TextAlign = ContentAlignment.MiddleLeft; text.AutoEllipsis = true; Controls.Add(text);
         timer.Tick += (_, _) => { timer.Stop(); Hide(); };
     }

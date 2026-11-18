@@ -184,6 +184,16 @@ internal static class SelfTests
                 timer.Start(); Application.Run(context);
             }
             Check(!shownDuringHiddenMessageLoop, "Minimized startup stays hidden through the real message loop and exits when closed");
+            var overlayArea = Screen.FromPoint(Cursor.Position).WorkingArea;
+            using (var overlay = new LayerOverlay())
+            {
+                var overlayPosition = new Point(overlayArea.Right - overlay.Width - 24, overlayArea.Bottom - overlay.Height - 24);
+                overlay.ShowLayer("Editing"); Application.DoEvents();
+                Check(overlay.Location == overlayPosition, "Layer overlay appears at the requested corner on its first display");
+                overlay.Hide(); overlay.ShowLayer("Media"); Application.DoEvents();
+                Check(overlay.Location == overlayPosition, "Layer overlay keeps the requested corner on later displays");
+                overlay.Hide();
+            }
             using var window = new MainWindow(Settings.Defaults(), new SettingsStore(Path.Combine(directory, "ui-profile.json")), new RecordingOutput(), true);
             window.Show(); Application.DoEvents(); window.ExerciseUi(); Application.DoEvents();
             Check(true, "Editor buttons add, rename, activate, bind, duplicate, delete, pause, and persist actual UI state");
